@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Owner {
+  id                   String   @id @default(cuid())
+  traktUserId          String   @unique
+  username             String
+  timezone             String   @default("Asia/Shanghai")
+  encryptedAccessToken String?
+  encryptedRefreshToken String?
+  tokenExpiresAt       DateTime?
+  avatarPath           String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  manualIntents        ManualHistoryIntent[]
+  dateEdits            HistoryDateEdit[]
+  sessions             Session[]
+  refreshLeaseUntil    DateTime?
+  events               WatchEvent[]
+  ticketStubs          TicketStub[]
+  syncState            SyncState?
+}
+
+model Media {
+  id            String   @id
+  kind          String
+  originalTitle String
+  chineseTitle  String?
+  year          Int?
+  tmdbId        String?
+  runtime       Int?
+  rating        Float?
+  posterPath    String?
+  metadataAt    DateTime?
+  description   String?
+  airedEpisodes Int?
+  episodes      Episode[]
+  events        WatchEvent[]
+  ticketStubs   TicketStub[]
+}
+
+model Episode {
+  id       String @id
+  showId   String
+  season   Int
+  number   Int
+  title    String?
+  runtime  Int?
+  show     Media @relation(fields: [showId], references: [id])
+  events   WatchEvent[]
+  @@unique([showId, season, number])
+}
+
+model WatchEvent {
+  // Trakt history IDs are 64-bit: preserve as strings, never JS Number.
+  id        String @id
+  ownerId   String
+  mediaId   String
+  episodeId String?
+  watchedAt DateTime?
+  importedAt DateTime @default(now())
+  action    String?
+  seenRun   String?
+  owner     Owner @relation(fields: [ownerId], references: [id])
+  media     Media @relation(fields: [mediaId], references: [id])
+  episode   Episode? @relation(fields: [episodeId], references: [id])
+  @@index([ownerId, watchedAt])
+  @@index([ownerId, mediaId, watchedAt])
+  @@index([episodeId])
+}
+
+model SyncState {
+  ownerId       String @id
+  owner         Owner @relation(fields: [ownerId], references: [id])
+  status        String @default("idle")
+  completedPage Int @default(0)
+  snapshotAt    DateTime?
+  lastActivityAt DateTime?
+  lastCheckedAt DateTime?
+  lastSuccessfulAt DateTime?
+  lastReconciledAt DateTime?
+  leaseExpiresAt DateTime?
+  errorCode      String?
+  runId          String?
+  expectedCount  Int?
+  completedCount Int @default(0)
+  retryAt        DateTime?
+  metadataCursor String?
+  mode           String?
+  rangeStart     String?
+  capturedActivity String?
+}
+
+model Session {
+  id        String @id
+  ownerId   String
+  csrf      String
+  expiresAt DateTime
+  owner     Owner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
+}
+
+model OAuthAttempt {
+  id        String @id
+  verifier  String
+  expiresAt DateTime
+}
+
+model ManualHistoryIntent {
+  id               String @id @default(uuid())
+  ownerId          String
+  owner            Owner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  kind             String
+  targetTraktId    String
+  showTraktId      String?
+  season           Int?
+  episode          Int?
+  watchedAt        DateTime
+  timezone         String
+  title            String
+  year             Int?
+  posterPath       String?
+  status           String @default("draft")
+  errorCode        String?
+  remoteEventId    String?
+  sentAt           DateTime?
+  confirmedAt      DateTime?
+  leaseExpiresAt   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  @@unique([ownerId, kind, targetTraktId, watchedAt])
+  @@index([ownerId, status, createdAt])
+}
+
+model HistoryDateEdit {
+ id String @id @default(uuid())
+ ownerId String
+ owner Owner @relation(fields:[ownerId],references:[id],onDelete:Cascade)
+ activeOwnerKey String? @unique
+ scope String
+ mode String
+ timezone String
+ status String @default("draft")
+ errorCode String?
+ confirmedAt DateTime?
+ retryAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ items HistoryDateEditItem[]
+ @@index([ownerId,createdAt])
+}
+model HistoryDateEditItem {
+ id String @id @default(uuid())
+ operationId String
+ operation HistoryDateEdit @relation(fields:[operationId],references:[id],onDelete:Cascade)
+ oldEventId String
+ mediaId String
+ episodeId String?
+ targetId String
+ title String
+ season Int?
+ episode Int?
+ oldWatchedAt DateTime?
+ newWatchedAt DateTime
+ status String @default("pending")
+ errorCode String?
+ originalJson String
+ baselineIds String?
+ deleteSentAt DateTime?
+ addSentAt DateTime?
+ newEventId String?
+ updatedAt DateTime @updatedAt
+ @@unique([operationId,oldEventId])
+ @@index([operationId,status])
+}
+
+model TicketStub {
+ id        String   @id @default(uuid())
+ ownerId   String
+ mediaId   String
+ filePath  String
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ owner     Owner    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+ media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+ @@unique([ownerId, mediaId])
+ @@index([ownerId])
+}

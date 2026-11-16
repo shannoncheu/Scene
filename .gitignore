@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.env*
+!.env.example
+data/*
+!data/.gitkeep
+*.tsbuildinfo
+
+# Private migration artifacts
+/backups/
+/validation-data/
+/deployment/runtime/
+/deployment/validation.env
+/deployment/Caddyfile.candidate
+
+validation-*

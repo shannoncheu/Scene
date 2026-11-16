@@ -1,0 +1,38 @@
+{
+  "name": "cinema-workshop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 4317",
+    "build": "next build && node scripts/sanitize-build.mjs",
+    "start": "node scripts/start-preview.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/lib/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "backup": "node --env-file=.env --import tsx scripts/backup.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "lossless-json": "^4.3.3",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "overrides": {
+    "postcss": ">=8.5.33"
+  }
+}
